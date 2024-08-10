@@ -25,5 +25,8 @@ success:true,
 message,
 });
 };
+const emitEvent=(req,event,user,data)=>{
+console.log("emmitting event ",event);
+};
 
-export {connectDB,sendToken};
+export {connectDB,sendToken,cookieOptions,emitEvent};

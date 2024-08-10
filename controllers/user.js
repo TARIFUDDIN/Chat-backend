@@ -12,8 +12,8 @@ const newUser = TryCatch(async (req, res, next) => {
     const { name, username, password, bio } = req.body;
   
     const avatar = {
-        public_id: req.file ? req.file.filename : "default_id",
-        url: req.file ? `uploads/${req.file.filename}` : "default_url",
+        public_id: "gyfhhyfg",
+        url: "yufhgyfutygf",
     };
     const user = await User.create({
         name,
@@ -31,16 +31,16 @@ const newUser = TryCatch(async (req, res, next) => {
     const login = TryCatch(async (req, res, next) => {
         const { username, password } = req.body;
       
-        const userDB = await User.findOne({ username }).select("+password");
+        const user = await User.findOne({ username }).select("+password");
       
-        if (!userDB)
+        if (!user)
           return next(new ErrorHandler("Invalid Username or Password", 404));
       
-        const isMatch = await compare(password, userDB.password);
+        const isMatch = await compare(password, user.password);
         if (!isMatch)
           return next(new ErrorHandler("Invalid Username or Password", 404));
       
-        sendToken(res, userDB, 200, `Welcome Back, ${userDB.name}`);
+        sendToken(res, user, 200, `Welcome Back, ${user.name}`);
       });
       
 
@@ -60,4 +60,14 @@ const logout = TryCatch(async (req, res) => {
       message: "Logged out successfully",
     });
 });
-export { login, newUser, getMyProfile,logout };
+const searchUser=TryCatch(async (req,res,next)=>{
+  const {name}=req.query;
+
+return res
+.status(200)
+.json({
+  success:true,
+  message:"",
+})
+});
+export { login, newUser, getMyProfile,logout,searchUser };
