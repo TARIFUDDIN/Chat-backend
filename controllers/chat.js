@@ -3,9 +3,10 @@ import { getOtherMembers } from "../lib/helper.js";
 import { TryCatch } from "../middlewares/error.js";
 import { Chat } from "../models/chat.js";
 import { User } from "../models/user.js";
-import { emitEvent } from "../utils/features.js";
+import { deletFilesFromCloudinary, emitEvent } from "../utils/features.js";
 import { ErrorHandler } from "../utils/utility.js";
 import { Message } from "../models/message.js";
+
 const newGroupChat = TryCatch(async (req, res, next) => {
   const { name, members } = req.body;
 
@@ -118,8 +119,8 @@ const getMyGroups = TryCatch(async (req, res, next) => {
     );
   
     emitEvent(req, REFETCH_CHATS, chat.members);
-    
-  
+      
+
     return res.status(200).json({
       success: true,
       message: "Members added successfully",
@@ -207,10 +208,16 @@ const leaveGroup = TryCatch(async (req, res, next) => {
   });
 });
 const sendAttachments = TryCatch(async (req, res, next) => {
-  const {chatId}=req.body;
-  const files=req.files|| [];
-  if(files.length>5)
-    return next(new ErrorHandler("Files cant be more than 5",400));
+  const { chatId } = req.body;
+
+  const files = req.files || [];
+
+  if (files.length < 1)
+    return next(new ErrorHandler("Please Upload Attachments", 400));
+
+  if (files.length > 5)
+    return next(new ErrorHandler("Files Can't be more than 5", 400));
+
   const[chat,me]=await Promise.all([
     Chat.findById(chatId),
     User.findById(req.user,"name"),
@@ -302,12 +309,80 @@ const renameGroup = TryCatch(async (req, res, next) => {
   });
 });
 
-const deleteChat=TryCatch(async(req,res,next)=>{
+const deleteChat = TryCatch(async (req, res, next) => {
+  const chatId = req.params.id;
 
-});
-const getMessages=TryCatch(async(req,res,next)=>{
+  const chat = await Chat.findById(chatId);
 
+  if (!chat) return next(new ErrorHandler("Chat not found", 404));
+
+  const members = chat.members;
+
+  if (chat.groupChat && chat.creator.toString() !== req.user.toString())
+    return next(
+      new ErrorHandler("You are not allowed to delete the group", 403)
+    );
+
+  if (!chat.groupChat && !chat.members.includes(req.user.toString())) {
+    return next(
+      new ErrorHandler("You are not allowed to delete the chat", 403)
+    );
+  };
+  const messagesWithAttachments = await Message.find({
+    chat: chatId,
+    attachments: { $exists: true, $ne: [] },
+  });
+
+  const public_ids = [];
+
+  messagesWithAttachments.forEach(({ attachments }) =>
+    attachments.forEach(({ public_id }) => public_ids.push(public_id))
+  );
+
+  await Promise.all([
+    deletFilesFromCloudinary(public_ids),
+    chat.deleteOne(),
+    Message.deleteMany({ chat: chatId }),
+  ]);
+
+  emitEvent(req, REFETCH_CHATS, members);
+
+  return res.status(200).json({
+    success: true,
+    message: "Chat deleted successfully",
+  });
 });
+
+const getMessages = TryCatch(async (req, res, next) => {
+  const chatId = req.params.id;
+  const { page = 1 } = req.query;
+
+  const resultPerPage = 20;
+  const skip = (page - 1) * resultPerPage;
+
+  const chat = await Chat.findById(chatId);
+console.log(chat);
+  
+
+  const [messages, totalMessagesCount] = await Promise.all([
+    Message.find({ chat: chatId })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(resultPerPage)
+      .populate("sender", "name")
+      .lean(),
+    Message.countDocuments({ chat: chatId }),
+  ]);
+
+  const totalPages = Math.ceil(totalMessagesCount / resultPerPage) || 0;
+
+  return res.status(200).json({
+    success: true,
+    messages: messages.reverse(),
+    totalPages,
+  });
+});
+
 
     export {
       newGroupChat,
