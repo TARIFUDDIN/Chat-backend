@@ -12,7 +12,8 @@ import { NEW_MESSAGE, NEW_MESSAGE_ALERT } from "./constants/events.js";
 import {v4 as uuid} from 'uuid';
 import { getSockets } from "./lib/helper.js";
 import { Message } from "./models/message.js";
-
+import {  v2 as  cloudinary} from 'cloudinary';
+import  cors  from 'cors';
 dotenv.config({
     path: "./.env",
 });
@@ -22,12 +23,26 @@ const envMode = process.env.NODE_ENV.trim() || "PRODUCTION";
 const adminSecretKey = process.env.ADMIN_SECRET_KEY||"adsasdsdfsdfsdfd";
 const userSocketIDs=new Map();
 connectDB(mongoURI);
-
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 const app = express();
 const server=createServer(app);
 const io=new Server(server,{});
 app.use(express.json());
 app.use(cookieParser());
+
+app.use(cors({
+origin:[
+  
+  process.env.CLIENT_URL,
+],
+credentials:true,
+}));
+
+
 app.use("/user", userRoute);
 app.use("/chat",chatRoute);
 app.use("/admin",adminRoute);
