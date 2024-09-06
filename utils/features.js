@@ -15,18 +15,21 @@ const cookieOptions = {
       .connect(uri, { dbName: "Chit-Chat" })
       .then((data) => console.log(`Connected to DB: ${data.connection.host}`))
       .catch((err) => {
+        console.log("Error connecting to the database");
         throw err;
       });
   };
 
 
-const sendToken=(res,user,code,message)=>{
-const token=jwt.sign({_id:user._id},process.env.JWT_SECRET);
-return res.status(code).cookie("chit-chat-token",token,cookieOptions).json({
-success:true,
-message,
-});
-};
+  const sendToken = (res, user, code, message) => {
+    const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET);
+  
+    return res.status(code).cookie("ChatApp-token", token, cookieOptions).json({
+      success: true,
+      user,
+      message,
+    });
+  };
 const emitEvent=(req,event,user,data)=>{
 console.log("emmitting event ",event);
 };

@@ -1,5 +1,5 @@
 import { ALERT, NEW_ATTACHMENT, REFETCH_CHATS } from "../constants/events.js";
-import { getOtherMembers } from "../lib/helper.js";
+import { getOtherMember } from "../lib/helper.js";
 import { TryCatch } from "../middlewares/error.js";
 import { Chat } from "../models/chat.js";
 import { User } from "../models/user.js";
@@ -35,7 +35,7 @@ const getMyChats = TryCatch(async (req, res, next) => {
   );
 
   const transformedChats = chats.map(({ _id, name, members, groupChat }) => {
-    const otherMember = getOtherMembers(members, req.user);
+    const otherMember = getOtherMember(members, req.user);
 
     return {
       _id,

@@ -20,7 +20,7 @@ const schema = new Schema(
     sender: {
       type: Types.ObjectId,
       ref: "User",
-      required: true,
+      
     },
     chat: {
       type: Types.ObjectId,
